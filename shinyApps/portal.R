@@ -52,7 +52,7 @@ output$portal_description <- renderUI({
 output$download_portal <- downloadHandler(
 
   filename = function() {
-    paste0(input$portal_id, "-Dataset.zip")
+    paste0(input$portal_id, ".zip")
   },
 
   content = function(file) {
@@ -61,7 +61,8 @@ output$download_portal <- downloadHandler(
 
       fs <- c()
       tmpdir <- tempdir()
-
+      file_names <- c()
+      
       datasets <- listEntities("PortalDataset", portal=input$portal_id)
 
       # Sort by timestamp and extract most recent dataset to convenience object
@@ -75,7 +76,10 @@ output$download_portal <- downloadHandler(
       profile_dat <- getWorkFileAsObject(
         hiveWorkFileID(dataset@ProfileAnnotationRDS)
       )
-
+      
+      # zip the files
+      file_names <- c(file_names, "Profile_Annotation")
+      
       saveRDS(profile_dat, file.path(tmpdir, "Profile_Annotation.RDS"))
 
       # increment the progress bar
@@ -86,6 +90,9 @@ output$download_portal <- downloadHandler(
         hiveWorkFileID(dataset@ChemicalAnnotationRDS)
       )
 
+      # zip the files
+      file_names <- c(file_names, "Chemical_Annotation")
+      
       saveRDS(chemical_dat, file.path(tmpdir, "Chemical_Annotation.RDS"))
 
       # increment the progress bar
@@ -96,18 +103,33 @@ output$download_portal <- downloadHandler(
         hiveWorkFileID(dataset@GeneExpressionRDS)
       )
 
+      # zip the files
+      file_names <- c(file_names, "Gene_Expression")
+      
       saveRDS(expression_dat, file.path(tmpdir, "Gene_Expression.RDS"))
 
       # increment the progress bar
       incProgress(4/6, detail = "connectivity map")
 
       # Read in the connectivity data ####
-      connectivity_dat <- getWorkFileAsObject(
-        hiveWorkFileID(dataset@ConnectivityRDS)
-      )
+      connectivity_dat <- tryCatch({
 
-      saveRDS(connectivity_dat, file.path(tmpdir, "Connectivity.RDS"))
+        getWorkFileAsObject(
+          hiveWorkFileID(dataset@ConnectivityRDS)
+        )      
 
+      }, error=function(e){
+        
+        return(NULL)
+        
+      })
+      
+      if(!is.null(connectivity_dat)){
+        # zip the files
+        file_names <- c(file_names, "Connectivity")
+        saveRDS(connectivity_dat, file.path(tmpdir, "Connectivity.RDS"))
+      }
+      
       # increment the progress bar
       incProgress(5/6, detail = "gene set enrichment")
 
@@ -116,6 +138,9 @@ output$download_portal <- downloadHandler(
         hiveWorkFileID(dataset@GeneSetEnrichmentRDS)
       )
 
+      # zip the files
+      file_names <- c(file_names, "Gene_Set_Enrichment")
+      
       saveRDS(gs_enrichment_dat, file.path(tmpdir, "Gene_Set_Enrichment.RDS"))
 
       # increment the progress bar
@@ -124,11 +149,11 @@ output$download_portal <- downloadHandler(
       K2summary <- getWorkFileAsObject(
         hiveWorkFileID(dataset@K2TaxonomerResultsRDS)
       )
+      
+      # zip the files
+      file_names <- c(file_names, "K2Taxonomer")
 
       saveRDS(K2summary, file.path(tmpdir, "K2Taxonomer.RDS"))
-
-      # zip the files
-      file_names <- c("Profile_Annotation", "Chemical_Annotation", "Gene_Expression", "Gene_Set_Enrichment", "Connectivity", "K2Taxonomer")
 
       for(names in file_names){
         path <- file.path(tmpdir, paste0(names, ".RDS"))

@@ -109,10 +109,8 @@ output$portal_main_page <- renderUI({
 })
 
 observeEvent(input$portal_id, {
-  
   fname <- isolate({ input$portal_id })
   session$sendCustomMessage("SelectedPortal", fname)
-  
 })
 
 observeEvent(input$main_page, {
@@ -126,11 +124,9 @@ observeEvent(input$chemical_tab, {
 })
 
 observeEvent(input$chem, {
-  
   req(input$chem)
   chemical_id <- isolate({ input$chem })
   session$sendCustomMessage("ChangedChemicalId", chemical_id)
-  
 })
 
 ## Observe the portal tab selected ####

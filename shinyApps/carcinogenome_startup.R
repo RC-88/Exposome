@@ -134,7 +134,7 @@ get_de <- function(
   
   for(i in seq_along(exposure)){
     #i=1;
-    sig <- unique(profile_dat[which(profile_dat$unique_ID_by_chem %in% exposure[i]), annot_var])
+    sig <- unique(profile_dat[which(profile_dat$unique_ID_by_chem %in% exposure[i] & profile_dat$Chemical_Id %in% chemical_id), annot_var])
     if(length(sig) > 1){
       mat[,i] <- rowMeans(eSet[,as.character(sig)], na.rm=T)
     }else{
@@ -148,22 +148,34 @@ get_de <- function(
   
   if(do.nmarkers){
     
-    ind0 <- sum(x > 0)
-    n1 <- min(nmarkers[1], ind0)
-    n2 <- min(nmarkers[2], n-ind0)
-    ord <- order(x, decreasing = TRUE)
-    n2ind <- n-n2+1
+    ind_down <- which(x < 0)
+    ind_up <- which(x > 0) 
+    
+    ord_down <- data.frame(
+      pos=ind_down,
+      x=x[ind_down]
+    ) %>% arrange(desc(x))
+    
+    ord_up <- data.frame(
+      pos=ind_up,
+      x=x[ind_up]
+    ) %>% arrange(desc(x))
+    
+    n1 = ifelse(nmarkers[1] > nrow(ord_down), nrow(ord_down), nmarkers[1]); 
+    n2 = ifelse(nmarkers[2] > nrow(ord_up), nrow(ord_up), nmarkers[2]);
     
     if(n1 == 0 & n2 == 0){
-      x.ind.nmarkers <- NULL
+      x.ind.nmarkers <- 1:n
     }else if(n2 == 0){
-      x.ind.nmarkers <- ord[1:n1]
+      x.ind.nmarkers <- ord_down$pos[1:n1]
     }else{
-      x.ind.nmarkers <- c(ord[1:n1], ord[n2ind:n])
+      x.ind.nmarkers <- c(ord_down$pos[1:n1], ord_up$pos[1:n2])
     }
     
   } else { 
+    
     x.ind.nmarkers <- 1:n 
+    
   }
   
   if(do.scorecutoff){
@@ -247,7 +259,7 @@ get_gsenrichment <- function(
   
   for(i in seq_along(exposure)){
     #i=1;
-    sig <- unique(profile_dat[which(profile_dat$unique_ID_by_chem %in% exposure[i]), annot_var])
+    sig <- unique(profile_dat[which(profile_dat$unique_ID_by_chem %in% exposure[i] & profile_dat$Chemical_Id %in% chemical_id), annot_var])
     if(length(sig) > 1){
       mat[,i] <- rowMeans(eSet[,as.character(sig)], na.rm=T)
     }else{
@@ -303,7 +315,7 @@ get_connectivity <- function(
   
   for(i in seq_along(exposure)){
     #i=1;
-    sig <- unique(profile_dat[which(profile_dat$unique_ID_by_chem %in% exposure[i]), annot_var])
+    sig <- unique(profile_dat[which(profile_dat$unique_ID_by_chem %in% exposure[i] & profile_dat$Chemical_Id %in% chemical_id), annot_var])
     if(length(sig) > 1){
       mat[,i] <- rowMeans(eSet[,as.character(sig)], na.rm=T)
     }else{
